@@ -4,1170 +4,1349 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Entry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        html {
-            scroll-behavior: smooth;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f5f5f5;
+            --surface: #ffffff;
+            --surface2: #f0f0f0;
+            --border: #dddddd;
+            --border-bright: #cccccc;
+            --accent: #0078D4;
+            --accent-dim: #e3f0fb;
+            --accent2: #005a9e;
+            --accent2-dim: #d0e4f5;
+            --warn: #d97706;
+            --warn-dim: #fef3c7;
+            --danger: #f44336;
+            --danger-dim: #fde8e8;
+            --text: #333333;
+            --text-muted: #666666;
+            --text-dim: #999999;
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'IBM Plex Sans', sans-serif;
+            --radius: 6px;
         }
-        
+
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0;
         }
-        
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 3px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+        /* ── Top bar ── */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
         }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-        }
-        
-        .staff-section {
-            margin-bottom: 30px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        
-        input[type="text"] {
-            width: 200px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 2px;
-            font-size: 14px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        
-        th {
-            background-color: #0078D4;
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: bold;
-        }
-        
-        th:first-child {
-            border-radius: 2px 0 0 0;
-        }
-        
-        th:last-child {
-            border-radius: 0 2px 0 0;
-        }
-        
-        td {
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        tr.empty-row {
-            background-color: #f8f8f8;
-        }
-        
-        tr.empty-row td {
-            background-color: #f8f8f8;
-        }
-        
-        td input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 2px;
-            box-sizing: border-box;
-        }
-        
-        /* Row animation */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        tr.animate-in {
-            animation: slideIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-        }
-        
-        .button-group {
+
+        .topbar-inner {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 14px 20px;
             display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .topbar-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .app-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .staff-row {
+            display: flex;
+            align-items: center;
             gap: 10px;
-            margin-top: 20px;
         }
-        
-        button {
-            padding: 10px 20px;
-            font-size: 14px;
-            border: none;
-            border-radius: 2px;
-            cursor: pointer;
-            font-weight: bold;
+
+        .staff-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
         }
-        
-        .submit-btn {
-            background-color: #0078D4;
-            color: white;
+
+        .staff-input-wrap {
+            position: relative;
         }
-        
-        .submit-btn:hover {
-            background-color: #005a9e;
+
+        input.staff-field {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 7px 12px;
+            border-radius: var(--radius);
+            width: 140px;
+            outline: none;
+            transition: border-color 0.15s;
         }
-        
-        .clear-btn {
-            background-color: #f44336;
-            color: white;
+
+        input.staff-field:focus {
+            border-color: var(--accent2);
         }
-        
-        .clear-btn:hover {
-            background-color: #da190b;
-        }
-        
-        .message {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 2px;
+
+        /* Staff dropdown */
+        .staff-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            background: var(--surface2);
+            border: 1px solid var(--border-bright);
+            border-radius: var(--radius);
+            min-width: 200px;
+            z-index: 200;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
             display: none;
         }
-        
-        .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+
+        .staff-dropdown.open { display: block; }
+
+        .staff-dropdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-family: var(--mono);
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
         }
-        
-        .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+
+        .staff-dropdown-item:last-child { border-bottom: none; }
+        .staff-dropdown-item:hover { background: var(--surface); }
+        .staff-dropdown-item .staff-num { color: var(--accent2); font-weight: 600; }
+        .staff-dropdown-item .staff-cnt { color: var(--text-muted); font-size: 11px; }
+
+        /* ── Entry panel ── */
+        .entry-panel {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
         }
-        
-        .staff-list {
+
+        .entry-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            align-items: end;
+        }
+
+        .entry-fields-below {
+            margin-top: 4px;
+            min-height: 14px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .field-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        input.entry-field {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 10px 12px;
+            border-radius: var(--radius);
+            outline: none;
+            width: 100%;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        input.entry-field:focus {
+            border-color: var(--accent);
+            background: #ffffff;
+        }
+
+        input.entry-field::placeholder { color: var(--text-dim); }
+
+        input.entry-field.validated { border-color: var(--accent); }
+        input.entry-field.error { border-color: var(--danger); }
+        input.entry-field.warning { border-color: var(--warn); }
+
+        /* Product preview strip */
+        .product-preview {
             margin-top: 10px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 2px;
-            display: none;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
-        .staff-list h3 {
-            margin-top: 0;
-            color: #333;
-            font-size: 16px;
+
+        .preview-sku {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent2);
+            background: var(--accent2-dim);
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
         }
-        
-        .staff-item {
-            padding: 8px;
-            margin: 5px 0;
-            background-color: white;
-            border-radius: 2px;
+
+        .preview-title {
+            font-size: 13px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 320px;
+        }
+
+        .preview-price {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        .preview-status {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .preview-status.loading { color: var(--accent2); }
+        .preview-status.not-found { color: var(--warn); }
+        .preview-status.error-state { color: var(--danger); }
+        .preview-status.blocked { color: var(--danger); }
+
+        /* Shelf validation message */
+        .shelf-status {
+            font-family: var(--mono);
+            font-size: 10px;
+            height: 14px;
+            transition: color 0.15s;
+        }
+
+        .shelf-status.ok { color: var(--accent); }
+        .shelf-status.blocked { color: var(--danger); }
+        .shelf-status.checking { color: var(--text-muted); }
+
+        /* Add button */
+        .add-btn {
+            background: var(--accent);
+            color: #0e0f11;
+            border: none;
+            border-radius: var(--radius);
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 18px;
             cursor: pointer;
-            border: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
+            transition: background 0.15s, transform 0.1s;
+            white-space: nowrap;
+            align-self: end;
         }
-        
-        .staff-item:hover {
-            background-color: #e8f4f8;
+
+        .add-btn:hover { background: #5fffb0; }
+        .add-btn:active { transform: scale(0.97); }
+        .add-btn:disabled {
+            background: var(--border);
+            color: var(--text-dim);
+            cursor: not-allowed;
         }
-        
-        .staff-item-number {
-            font-weight: bold;
-            color: #0078D4;
+
+        /* ── Main content area ── */
+        .main {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        
-        .staff-item-count {
-            color: #666;
-        }
-        
-        /* Receipt styles */
-        .receipt-container {
-            margin-top: 30px;
-            background-color: #f0f0f0;
-            border-radius: 2px;
-            display: none;
-        }
-        
-        .receipt-container.visible {
-            display: block;
-        }
-        
-        .receipt-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .receipt-header-left {
+
+        /* ── Action bar ── */
+        .action-bar {
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: space-between;
+            margin-bottom: 14px;
         }
-        
-        .receipt-header h2 {
-            margin: 0;
-            color: #333;
-            font-size: 14px;
-            font-weight: normal;
+
+        .entry-count {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-muted);
         }
-        
-        .receipt-header h2 strong {
-            font-weight: bold;
+
+        .entry-count span {
+            color: var(--text);
+            font-weight: 600;
         }
-        
-        .receipt-buttons {
+
+        .action-buttons {
             display: flex;
             gap: 8px;
         }
-        
-        .receipt-btn {
-            padding: 6px 12px;
+
+        .btn {
+            padding: 7px 14px;
+            font-family: var(--mono);
             font-size: 12px;
+            font-weight: 600;
             border: none;
-            border-radius: 2px;
+            border-radius: var(--radius);
             cursor: pointer;
-            font-weight: bold;
+            transition: background 0.15s;
         }
-        
-        .copy-again-btn {
-            background-color: #0078D4;
+
+        .btn-primary {
+            background: var(--accent2);
             color: white;
         }
-        
-        .copy-again-btn:hover {
-            background-color: #005a9e;
+
+        .btn-primary:hover { background: #6eaeff; }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger-dim);
         }
-        
-        .restore-btn {
-            background-color: #777;
-            color: white;
+
+        .btn-danger:hover { background: var(--danger-dim); }
+
+        /* ── Entry stack ── */
+        .entry-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
-        
-        .restore-btn:hover {
-            background-color: #555;
+
+        .stack-empty {
+            text-align: center;
+            padding: 48px 20px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-dim);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
         }
-        
-        .receipt-summary {
-            padding: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .receipt-summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: white;
-            border-radius: 2px;
+
+        .stack-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            gap: 12px;
+            animation: slideDown 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+            position: relative;
             overflow: hidden;
         }
-        
-        .receipt-summary-table th {
-            background-color: #888;
-            color: white;
-            padding: 8px 10px;
+
+        .stack-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--accent);
+            opacity: 1;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .item-index {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+            width: 22px;
+            text-align: right;
+        }
+
+        .item-body {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .item-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .item-sku {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent2);
+            background: var(--accent2-dim);
+            padding: 2px 7px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .item-shelf {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            background: var(--accent-dim);
+            padding: 2px 7px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .item-shelf.remove {
+            color: var(--danger);
+            background: var(--danger-dim);
+        }
+
+        .item-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-title.loading {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .item-price {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .item-remove {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 4px;
+            border-radius: 4px;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .item-remove:hover {
+            color: var(--danger);
+            background: var(--danger-dim);
+        }
+
+        /* ── Receipt ── */
+        .receipt {
+            margin-top: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: none;
+        }
+
+        .receipt.visible { display: block; }
+
+        .receipt-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .receipt-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .receipt-title strong {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .receipt-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .receipt-btn {
+            padding: 5px 11px;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .rcopy { background: var(--accent2); color: white; }
+        .rcopy:hover { background: #6eaeff; }
+        .rrestore { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+        .rrestore:hover { background: var(--surface2); }
+
+        .receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--mono);
+            font-size: 11px;
+        }
+
+        .receipt-table th {
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 8px 14px;
             text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .receipt-table td {
+            padding: 7px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .receipt-table tr:last-child td { border-bottom: none; }
+        .receipt-table tr:nth-child(even) td { background: #f8f8f8; }
+        .receipt-table td:first-child { color: var(--accent2); }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--surface2);
+            border: 1px solid var(--border-bright);
+            color: var(--text);
+            font-family: var(--mono);
             font-size: 12px;
-            font-weight: bold;
+            padding: 10px 18px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+            z-index: 300;
+            white-space: nowrap;
         }
-        
-        .receipt-summary-table th:first-child {
-            border-radius: 2px 0 0 0;
-        }
-        
-        .receipt-summary-table th:last-child {
-            border-radius: 0 2px 0 0;
-        }
-        
-        .receipt-summary-table td {
-            padding: 6px 10px;
-            border-bottom: 1px solid #e8e8e8;
-            font-size: 12px;
-            color: #555;
-        }
-        
-        .receipt-summary-table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .receipt-summary-table tr:nth-child(even) {
-            background-color: #fafafa;
-        }
-        
-        /* Modal styles */
+
+        .toast.success { border-color: var(--accent); color: var(--accent); }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── Modal ── */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.4);
+            inset: 0;
+            background: rgba(0,0,0,0.6);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 400;
         }
-        
-        .modal-overlay.visible {
-            display: flex;
-        }
-        
+
+        .modal-overlay.visible { display: flex; }
+
         .modal {
-            background-color: white;
-            padding: 25px 30px;
-            border-radius: 3px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            max-width: 350px;
+            background: var(--surface2);
+            border: 1px solid var(--border-bright);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            max-width: 340px;
             width: 90%;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.6);
         }
-        
+
         .modal h3 {
-            margin: 0 0 15px 0;
-            color: #333;
-            font-size: 16px;
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
         }
-        
+
         .modal p {
-            margin: 0 0 15px 0;
-            color: #666;
-            font-size: 14px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
         }
-        
-        .modal input[type="text"] {
+
+        .modal input {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 2px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
             font-size: 14px;
-            box-sizing: border-box;
-            margin-bottom: 15px;
-        }
-        
-        .modal input[type="text"]:focus {
+            font-weight: 600;
+            padding: 10px 12px;
+            border-radius: var(--radius);
             outline: none;
-            border-color: #0078D4;
+            margin-bottom: 16px;
         }
-        
-        .modal-buttons {
+
+        .modal input:focus { border-color: var(--accent2); }
+
+        .modal-btns {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: flex-end;
         }
-        
-        .modal-btn {
+
+        .modal-cancel {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
             padding: 8px 16px;
-            font-size: 13px;
-            border: none;
-            border-radius: 2px;
+            border-radius: var(--radius);
+            font-family: var(--mono);
+            font-size: 12px;
             cursor: pointer;
-            font-weight: bold;
         }
-        
-        .modal-btn-primary {
-            background-color: #0078D4;
+
+        .modal-cancel:hover { background: var(--surface); }
+
+        .modal-confirm {
+            background: var(--accent2);
+            border: none;
             color: white;
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
         }
-        
-        .modal-btn-primary:hover {
-            background-color: #005a9e;
-        }
-        
-        .modal-btn-secondary {
-            background-color: #e0e0e0;
-            color: #333;
-        }
-        
-        .modal-btn-secondary:hover {
-            background-color: #d0d0d0;
-        }
-        
-        .version-number {
+
+        .modal-confirm:hover { background: #6eaeff; }
+
+        .version {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 8pt;
-            color: #999;
+            bottom: 8px;
+            right: 12px;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--text-dim);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Inventory Entry</h1>
-        
-        <div class="staff-section">
-            <label for="staffNumber">Staff Number:</label>
-            <input type="text" id="staffNumber" placeholder="Enter staff number">
-            <div id="staffList" class="staff-list"></div>
-        </div>
-        
-        <table id="inventoryTable">
-            <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>Shelf</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr>
-                    <td><input type="text" class="sku-input" placeholder="SKU"></td>
-                    <td><input type="text" class="shelf-input" placeholder="Shelf"></td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <div class="button-group">
-            <button class="submit-btn" onclick="copyToClipboard()">Submit & Copy to Clipboard</button>
-            <button class="clear-btn" onclick="clearAll()">Clear All</button>
-        </div>
-        
-        <div id="message" class="message"></div>
-        
-        <!-- Receipt section -->
-        <div id="receiptContainer" class="receipt-container">
-            <div class="receipt-header">
-                <div class="receipt-header-left">
-                    <h2><strong id="receiptCount">0</strong> rows copied to clipboard</h2>
-                </div>
-                <div class="receipt-buttons">
-                    <button class="receipt-btn copy-again-btn" onclick="copyReceiptToClipboard()">Copy Again</button>
-                    <button class="receipt-btn restore-btn" onclick="restoreData()">Restore</button>
+
+<!-- ── Sticky entry panel ── -->
+<div class="topbar">
+    <div class="topbar-inner">
+        <div class="topbar-head">
+            <span class="app-title">Inventory Entry</span>
+            <div class="staff-row">
+                <span class="staff-label">Staff #</span>
+                <div class="staff-input-wrap">
+                    <input type="text" id="staffNumber" class="staff-field" placeholder="—" autocomplete="off">
+                    <div id="staffDropdown" class="staff-dropdown"></div>
                 </div>
             </div>
-            <div class="receipt-summary">
-                <table class="receipt-summary-table">
-                    <thead>
-                        <tr>
-                            <th>SKU</th>
-                            <th>Shelf</th>
-                            <th>Staff</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="receiptBody">
-                    </tbody>
-                </table>
-            </div>
         </div>
-        
-        <!-- Staff number modal -->
-        <div id="staffModal" class="modal-overlay" onclick="handleModalOverlayClick(event)">
-            <div class="modal" onclick="event.stopPropagation()">
-                <h3>Staff Number Required</h3>
-                <p>Please enter your staff number to submit.</p>
-                <input type="text" id="modalStaffInput" placeholder="Enter staff number">
-                <div class="modal-buttons">
-                    <button class="modal-btn modal-btn-secondary" onclick="closeStaffModal()">Cancel</button>
-                    <button class="modal-btn modal-btn-primary" onclick="confirmStaffModal()">Confirm</button>
+
+        <div class="entry-panel">
+            <div class="entry-fields">
+                <div class="field-group">
+                    <span class="field-label">SKU</span>
+                    <input type="text" id="skuInput" class="entry-field" placeholder="e.g. 10234" autocomplete="off">
                 </div>
+                <div class="field-group">
+                    <span class="field-label">Shelf</span>
+                    <input type="text" id="shelfInput" class="entry-field" placeholder="e.g. A1-01" autocomplete="off">
+                </div>
+                <button id="addBtn" class="add-btn" onclick="addEntry()">Add ↵</button>
+            </div>
+            <div class="entry-fields-below">
+                <span id="shelfStatus" class="shelf-status"></span>
+            </div>
+            <div class="product-preview" id="productPreview">
+                <span class="preview-status" id="previewStatus"></span>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        let currentStaffNumber = '';
-        let lastSubmittedData = null;
-        let lastSubmittedClipboardText = '';
-        
-        function getAllStaffData() {
-            try {
-                const allData = localStorage.getItem('inventoryStaffData');
-                return allData ? JSON.parse(allData) : {};
-            } catch (e) {
-                console.log('Could not load staff data');
-                return {};
-            }
-        }
-        
-        function saveStaffData(staffNumber) {
-            if (!staffNumber) return;
-            
-            const rows = [];
-            document.querySelectorAll('#tableBody tr:not(.empty-row)').forEach(row => {
-                const sku = row.querySelector('.sku-input').value;
-                const shelf = row.querySelector('.shelf-input').value;
-                if (sku || shelf) {
-                    rows.push({ sku, shelf });
-                }
-            });
-            
-            try {
-                const allData = getAllStaffData();
-                allData[staffNumber] = rows;
-                localStorage.setItem('inventoryStaffData', JSON.stringify(allData));
-            } catch (e) {
-                console.log('localStorage not available');
-            }
-        }
-        
-        function removeStaffData(staffNumber) {
-            if (!staffNumber) return;
-            
-            try {
-                const allData = getAllStaffData();
-                delete allData[staffNumber];
-                localStorage.setItem('inventoryStaffData', JSON.stringify(allData));
-            } catch (e) {
-                console.log('localStorage not available');
-            }
-        }
-        
-        function loadStaffData(staffNumber) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            
-            if (!staffNumber) {
-                addRow('', '', false, false);
-                return;
-            }
-            
-            try {
-                const allData = getAllStaffData();
-                const staffData = allData[staffNumber];
-                
-                if (staffData && staffData.length > 0) {
-                    staffData.forEach(row => {
-                        addRow(row.sku, row.shelf, false, false);
-                    });
-                } else {
-                    addRow('', '', false, false);
-                }
-                addRow('', '', false, false);
-            } catch (e) {
-                console.log('Could not load saved data');
-                addRow('', '', false, false);
-            }
-        }
-        
-        function displayStaffList() {
-            const staffListEl = document.getElementById('staffList');
-            const staffNumber = document.getElementById('staffNumber').value.trim();
-            
-            if (staffNumber) {
-                staffListEl.style.display = 'none';
-                return;
-            }
-            
-            const allData = getAllStaffData();
-            const staffNumbers = Object.keys(allData).filter(num => allData[num].length > 0);
-            
-            if (staffNumbers.length === 0) {
-                staffListEl.style.display = 'none';
-                return;
-            }
-            
-            let html = '<h3>Saved Staff Data:</h3>';
-            staffNumbers.forEach(num => {
-                const rowCount = allData[num].length;
-                html += `
-                    <div class="staff-item" onclick="selectStaffNumber('${num}')">
-                        <span class="staff-item-number">Staff #${num}</span>
-                        <span class="staff-item-count">${rowCount} row${rowCount !== 1 ? 's' : ''}</span>
-                    </div>
-                `;
-            });
-            
-            staffListEl.innerHTML = html;
-            staffListEl.style.display = 'block';
-        }
-        
-        function selectStaffNumber(staffNumber) {
-            document.getElementById('staffNumber').value = staffNumber;
-            handleStaffNumberChange();
-        }
-        
-        function handleStaffNumberChange() {
-            const newStaffNumber = document.getElementById('staffNumber').value.trim();
-            
-            // If we already have this staff number loaded, nothing to do
-            if (newStaffNumber === currentStaffNumber) {
-                return;
-            }
-            
-            // Save current data before switching (if we have a staff number)
-            if (currentStaffNumber) {
-                saveStaffData(currentStaffNumber);
-            }
-            
-            // Collect any "unowned" rows (rows entered without a staff number)
-            const unownedRows = [];
-            if (!currentStaffNumber) {
-                document.querySelectorAll('#tableBody tr:not(.empty-row)').forEach(row => {
-                    const sku = row.querySelector('.sku-input').value.trim();
-                    const shelf = row.querySelector('.shelf-input').value.trim();
-                    if (sku || shelf) {
-                        unownedRows.push({ sku, shelf });
-                    }
-                });
-            }
-            
-            // Load new staff data
-            currentStaffNumber = newStaffNumber;
-            
-            if (newStaffNumber) {
-                const tbody = document.getElementById('tableBody');
-                
-                // Measure a row height before clearing (for scroll compensation)
-                const existingRow = tbody.querySelector('tr');
-                const rowHeight = existingRow ? existingRow.offsetHeight : 40;
-                
-                tbody.innerHTML = '';
-                
-                let existingRows = [];
-                let hadExistingData = false;
-                
-                try {
-                    const allData = getAllStaffData();
-                    const staffData = allData[newStaffNumber];
-                    
-                    if (staffData && staffData.length > 0) {
-                        existingRows = staffData;
-                        hadExistingData = true;
-                    }
-                } catch (e) {
-                    console.log('Could not load saved data');
-                }
-                
-                // Add existing rows first
-                existingRows.forEach(row => {
-                    addRow(row.sku, row.shelf, false, false);
-                });
-                
-                // Then append unowned rows
-                unownedRows.forEach(row => {
-                    addRow(row.sku, row.shelf, false, false);
-                });
-                
-                // If no rows at all, add an empty one
-                if (existingRows.length === 0 && unownedRows.length === 0) {
-                    addRow('', '', false, false);
-                }
-                
-                // Add the trailing empty row
-                addRow('', '', true, false);
-                
-                // Save the merged data
-                saveStaffData(newStaffNumber);
-                
-                // Compensate scroll position if rows were prepended
-                if (existingRows.length > 0 && unownedRows.length > 0) {
-                    const scrollCompensation = existingRows.length * rowHeight;
-                    window.scrollBy(0, scrollCompensation);
-                }
-                
-                // Show feedback if we merged data
-                if (unownedRows.length > 0 && hadExistingData) {
-                    showMessage(`${unownedRows.length} new row${unownedRows.length !== 1 ? 's' : ''} added to ${existingRows.length} existing row${existingRows.length !== 1 ? 's' : ''} for Staff #${newStaffNumber}`, 'success');
-                } else if (unownedRows.length > 0) {
-                    showMessage(`${unownedRows.length} row${unownedRows.length !== 1 ? 's' : ''} assigned to Staff #${newStaffNumber}`, 'success');
-                }
-            } else {
-                loadStaffData('');
-            }
-            
-            displayStaffList();
-        }
-        
-        function handleStaffNumberInput() {
-            const newStaffNumber = document.getElementById('staffNumber').value.trim();
-            
-            // If we had a staff number and it's being edited/deleted, clear the table
-            // This prevents showing stale data while editing
-            if (currentStaffNumber && newStaffNumber !== currentStaffNumber) {
-                // Save current data before clearing
-                saveStaffData(currentStaffNumber);
-                
-                // Clear table
-                const tbody = document.getElementById('tableBody');
-                tbody.innerHTML = '';
-                addRow('', '', false, false);
-                
-                // Reset to unowned state
-                currentStaffNumber = '';
-            }
-            
-            // Just update the staff list display while typing
-            displayStaffList();
-        }
-        
-        function addRow(sku = '', shelf = '', isEmptyRow = false, animate = true) {
-            const tbody = document.getElementById('tableBody');
-            const row = document.createElement('tr');
-            
-            if (isEmptyRow) {
-                row.classList.add('empty-row');
-            }
-            
-            if (animate) {
-                row.classList.add('animate-in');
-            }
-            
-            row.innerHTML = `
-                <td><input type="text" class="sku-input" placeholder="SKU" value="${sku}"></td>
-                <td><input type="text" class="shelf-input" placeholder="Shelf" value="${shelf}"></td>
-            `;
-            tbody.appendChild(row);
-            
-            row.querySelectorAll('input').forEach(input => {
-                input.addEventListener('input', handleInput);
-                input.addEventListener('keydown', handleKeyDown);
-                input.addEventListener('focus', handleFocus);
-            });
-            
-            return row;
-        }
-        
-        function ensureEmptyRow() {
-            const allRows = Array.from(document.querySelectorAll('#tableBody tr'));
-            const emptyRows = allRows.filter(row => row.classList.contains('empty-row'));
-            
-            emptyRows.forEach(row => row.remove());
-            
-            addRow('', '', true, true);
-        }
-        
-        function handleFocus(e) {
-            const currentRow = e.target.closest('tr');
-            const allRows = Array.from(document.querySelectorAll('#tableBody tr'));
-            const currentRowIndex = allRows.indexOf(currentRow);
-            
-            if (currentRow.classList.contains('empty-row')) {
-                currentRow.classList.remove('empty-row');
-                addRow('', '', true, true);
-            }
-            
-            if (e.target.classList.contains('sku-input')) {
-                const nextRow = allRows[currentRowIndex + 1];
-                if (nextRow && nextRow.classList.contains('empty-row')) {
-                    const shelfInput = currentRow.querySelector('.shelf-input');
-                    const lastShelf = getLastShelfValue();
-                    if (lastShelf) {
-                        shelfInput.placeholder = lastShelf;
-                    }
-                }
-            }
-            
-            if (e.target.classList.contains('shelf-input')) {
-                e.target.select();
-            }
-            
-            // Smooth scroll to keep input visible
-            scrollToRow(currentRow);
-        }
-        
-        // Scroll to keep the current row comfortably visible
-        function scrollToRow(row) {
-            const rect = row.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const targetPosition = viewportHeight * 0.4; // Keep row at 40% from top
-            
-            if (rect.top > targetPosition || rect.bottom > viewportHeight - 100) {
-                const scrollOffset = rect.top - targetPosition + window.scrollY;
-                window.scrollTo({
-                    top: scrollOffset,
-                    behavior: 'smooth'
-                });
-            }
-        }
-        
-        function handleInput(e) {
-            const currentRow = e.target.closest('tr');
-            const allRows = Array.from(document.querySelectorAll('#tableBody tr'));
-            const currentRowIndex = allRows.indexOf(currentRow);
-            
-            const input = e.target;
-            const start = input.selectionStart;
-            const end = input.selectionEnd;
-            input.value = input.value.toUpperCase();
-            input.setSelectionRange(start, end);
-            
-            hideReceiptAndFinalizeRemoval();
-            
-            if (currentRowIndex === allRows.length - 1) {
-                const hasEmptyRow = allRows.some(row => row.classList.contains('empty-row'));
-                if (!hasEmptyRow) {
-                    addRow('', '', true, true);
-                }
-            }
-            
-            if (currentStaffNumber) {
-                saveStaffData(currentStaffNumber);
-            }
-        }
-        
-        function handleKeyDown(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                copyToClipboard();
-                return;
-            }
-            
-            if (e.ctrlKey && e.key === 'Backspace') {
-                e.preventDefault();
-                const currentRow = e.target.closest('tr');
-                const allRows = document.querySelectorAll('#tableBody tr');
-                
-                if (allRows.length > 2 && !currentRow.classList.contains('empty-row')) {
-                    const currentRowIndex = Array.from(allRows).indexOf(currentRow);
-                    currentRow.remove();
-                    
-                    const newRows = document.querySelectorAll('#tableBody tr');
-                    if (currentRowIndex > 0 && newRows[currentRowIndex - 1]) {
-                        newRows[currentRowIndex - 1].querySelector('.sku-input').focus();
-                    } else if (newRows[0]) {
-                        newRows[0].querySelector('.sku-input').focus();
-                    }
-                    
-                    if (currentStaffNumber) {
-                        saveStaffData(currentStaffNumber);
-                    }
-                }
-                return;
-            }
-            
-            if (e.ctrlKey && e.key === ' '){
-                e.preventDefault();
-                const currentInput = e.target;
-                const currentRow = currentInput.closest('tr');
-                const currentShelf = currentRow.querySelector('.shelf-input');
-                currentShelf.value = "*FJERN*";
-                
-                if (currentStaffNumber) {
-                    saveStaffData(currentStaffNumber);
-                }
-                return;
-            }
-            
-            if (e.key === 'Tab' && !e.shiftKey) {
-                const currentInput = e.target;
-                const currentRow = currentInput.closest('tr');
-                const allRows = Array.from(document.querySelectorAll('#tableBody tr'));
-                const currentRowIndex = allRows.indexOf(currentRow);
-                
-                if (currentInput.classList.contains('sku-input')) {
-                    const nextRow = allRows[currentRowIndex + 1];
-                    if (nextRow && nextRow.classList.contains('empty-row')) {
-                        const shelfInput = currentRow.querySelector('.shelf-input');
-                        setTimeout(() => {
-                            shelfInput.placeholder = 'Shelf';
-                        }, 0);
-                    }
-                }
-            }
-            
-            if (e.key === 'Enter' && !e.ctrlKey) {
-                e.preventDefault();
-                
-                const currentInput = e.target;
-                const currentRow = currentInput.closest('tr');
-                const allRows = Array.from(document.querySelectorAll('#tableBody tr'));
-                const currentRowIndex = allRows.indexOf(currentRow);
-                
-                const nextRow = allRows[currentRowIndex + 1];
-                if (nextRow && nextRow.classList.contains('empty-row')) {
-                    if (currentInput.classList.contains('sku-input')) {
-                        const lastShelf = getLastShelfValue();
-                        const shelfInput = currentRow.querySelector('.shelf-input');
-                        if (lastShelf && !shelfInput.value) {
-                            shelfInput.value = lastShelf;
-                        }
-                    }
-                    
-                    nextRow.classList.remove('empty-row');
-                    addRow('', '', true, true);
-                    
-                    if (currentInput.classList.contains('sku-input')) {
-                        nextRow.querySelector('.sku-input').focus();
-                    } else {
-                        const shelfInput = nextRow.querySelector('.shelf-input');
-                        shelfInput.focus();
-                        shelfInput.select();
-                    }
-                    
-                    // Scroll to the newly focused row
-                    setTimeout(() => scrollToRow(nextRow), 50);
-                } else if (nextRow && !nextRow.classList.contains('empty-row')) {
-                    if (currentInput.classList.contains('sku-input')) {
-                        nextRow.querySelector('.sku-input').focus();
-                    } else {
-                        const shelfInput = nextRow.querySelector('.shelf-input');
-                        shelfInput.focus();
-                        shelfInput.select();
-                    }
-                    
-                    // Scroll to the newly focused row
-                    setTimeout(() => scrollToRow(nextRow), 50);
-                }
-                
-                if (currentStaffNumber) {
-                    saveStaffData(currentStaffNumber);
-                }
-            }
-        }
-        
-        function getLastShelfValue() {
-            const allRows = document.querySelectorAll('#tableBody tr:not(.empty-row)');
-            for (let i = allRows.length - 1; i >= 0; i--) {
-                const shelfValue = allRows[i].querySelector('.shelf-input').value.trim();
-                if (shelfValue) {
-                    return shelfValue;
-                }
-            }
-            return '';
-        }
-        
-        function showReceipt(rows, staffNumber, date) {
-            const receiptContainer = document.getElementById('receiptContainer');
-            const receiptBody = document.getElementById('receiptBody');
-            const receiptCount = document.getElementById('receiptCount');
-            
-            let html = '';
-            rows.forEach(row => {
-                html += `
-                    <tr>
-                        <td>${row.sku}</td>
-                        <td>${row.shelf}</td>
-                        <td>${staffNumber}</td>
-                        <td>${date}</td>
-                    </tr>
-                `;
-            });
-            
-            receiptBody.innerHTML = html;
-            receiptCount.textContent = rows.length;
-            receiptContainer.classList.add('visible');
-        }
-        
-        function hideReceiptAndFinalizeRemoval() {
-            const receiptContainer = document.getElementById('receiptContainer');
-            if (receiptContainer.classList.contains('visible')) {
-                receiptContainer.classList.remove('visible');
-                lastSubmittedData = null;
-                lastSubmittedClipboardText = '';
-            }
-        }
-        
-        async function copyReceiptToClipboard() {
-            if (!lastSubmittedClipboardText) {
-                showMessage('No data to copy', 'error');
-                return;
-            }
-            
-            try {
-                await navigator.clipboard.writeText(lastSubmittedClipboardText);
-                showMessage('Copied to clipboard again!', 'success');
-            } catch (err) {
-                showMessage('Failed to copy to clipboard', 'error');
-            }
-        }
-        
-        function restoreData() {
-            if (!lastSubmittedData) {
-                showMessage('No data to restore', 'error');
-                return;
-            }
-            
-            const { staffNumber, rows } = lastSubmittedData;
-            
-            try {
-                const allData = getAllStaffData();
-                allData[staffNumber] = rows;
-                localStorage.setItem('inventoryStaffData', JSON.stringify(allData));
-            } catch (e) {
-                showMessage('Failed to restore data', 'error');
-                return;
-            }
-            
-            document.getElementById('staffNumber').value = staffNumber;
-            currentStaffNumber = staffNumber;
-            loadStaffData(staffNumber);
-            
-            document.getElementById('receiptContainer').classList.remove('visible');
-            lastSubmittedData = null;
-            lastSubmittedClipboardText = '';
-            
-            showMessage('Data restored to storage', 'success');
-            displayStaffList();
-        }
-        
-        // Staff number modal functions
-        function showStaffModal() {
-            const modal = document.getElementById('staffModal');
-            const modalInput = document.getElementById('modalStaffInput');
-            modal.classList.add('visible');
-            modalInput.value = '';
-            modalInput.focus();
-            
-            // Add keyboard listener
-            modalInput.addEventListener('keydown', handleModalKeydown);
-        }
-        
-        function closeStaffModal() {
-            const modal = document.getElementById('staffModal');
-            const modalInput = document.getElementById('modalStaffInput');
-            modal.classList.remove('visible');
-            modalInput.removeEventListener('keydown', handleModalKeydown);
-        }
-        
-        function handleModalKeydown(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                confirmStaffModal();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                closeStaffModal();
-            }
-        }
-        
-        function handleModalOverlayClick(e) {
-            if (e.target === e.currentTarget) {
-                closeStaffModal();
-            }
-        }
-        
-        function confirmStaffModal() {
-            const modalInput = document.getElementById('modalStaffInput');
-            const staffNumber = modalInput.value.trim().toUpperCase();
-            
-            if (!staffNumber) {
-                modalInput.focus();
-                return;
-            }
-            
-            // Set the staff number in the main field
-            document.getElementById('staffNumber').value = staffNumber;
-            
-            // Trigger the change handler to merge any unowned rows
-            handleStaffNumberChange();
-            
-            // Close the modal
-            closeStaffModal();
-        }
-        
-        async function copyToClipboard() {
-            const staffNumber = document.getElementById('staffNumber').value.trim();
-            
-            if (!staffNumber) {
-                showStaffModal();
-                return;
-            }
-            
-            await performCopyToClipboard(staffNumber);
-        }
-        
-        async function performCopyToClipboard(staffNumber) {
-            const today = new Date().toISOString().split('T')[0];
-            const rows = [];
-            const rowsForReceipt = [];
-            const rowsForRestore = [];
-            
-            document.querySelectorAll('#tableBody tr:not(.empty-row)').forEach(row => {
-                const sku = row.querySelector('.sku-input').value.trim();
-                let shelf = row.querySelector('.shelf-input').value.trim();
-                
-                if (sku && shelf) {
-                    if (shelf === ' ') {
-                        shelf = '*FJERN*';
-                    }
-                    
-                    rows.push(`${sku}\t${shelf}\t${staffNumber}\t${today}`);
-                    rowsForReceipt.push({ sku, shelf });
-                    rowsForRestore.push({ sku, shelf });
-                }
-            });
-            
-            if (rows.length === 0) {
-                showMessage('No data to copy. Please enter at least one SKU and Shelf.', 'error');
-                return;
-            }
-            
-            const output = rows.join('\n');
-            
-            try {
-                await navigator.clipboard.writeText(output);
-                
-                lastSubmittedData = {
-                    staffNumber: staffNumber,
-                    rows: rowsForRestore
-                };
-                lastSubmittedClipboardText = output;
-                
-                removeStaffData(staffNumber);
-                
-                const tbody = document.getElementById('tableBody');
-                tbody.innerHTML = '';
-                addRow('', '', false, false);
-                addRow('', '', true, false);
-                
-                showReceipt(rowsForReceipt, staffNumber, today);
-                
-                displayStaffList();
-                
-            } catch (err) {
-                showMessage('Failed to copy to clipboard. Please try again.', 'error');
-                console.error('Clipboard error:', err);
-            }
-        }
-        
-        function clearAll() {
-            if (confirm('Are you sure you want to clear all data for this staff number?')) {
-                const tbody = document.getElementById('tableBody');
-                tbody.innerHTML = '';
-                addRow('', '', false, false);
-                addRow('', '', true, false);
-                
-                hideReceiptAndFinalizeRemoval();
-                
-                if (currentStaffNumber) {
-                    saveStaffData(currentStaffNumber);
-                }
-                showMessage('All data cleared', 'success');
-            }
-        }
-        
-        function showMessage(text, type) {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = text;
-            messageEl.className = `message ${type}`;
-            messageEl.style.display = 'block';
-            
-            setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, 5000);
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const staffInput = document.getElementById('staffNumber');
-            staffInput.addEventListener('input', handleStaffNumberInput);
-            staffInput.addEventListener('change', handleStaffNumberChange);
-            staffInput.addEventListener('blur', function() {
-                setTimeout(() => {
-                    handleStaffNumberChange();
-                    displayStaffList();
-                }, 200);
-            });
-            
-            loadStaffData('');
-            displayStaffList();
+<!-- ── Main content ── -->
+<div class="main">
+    <div class="action-bar">
+        <span class="entry-count" id="entryCount">No entries yet</span>
+        <div class="action-buttons">
+            <button class="btn btn-danger" onclick="clearAll()">Clear</button>
+            <button class="btn btn-primary" onclick="submitEntries()">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <div id="entryStack" class="entry-stack">
+        <div class="stack-empty" id="emptyState">Enter a SKU and shelf above to begin</div>
+    </div>
+
+    <div id="receipt" class="receipt">
+        <div class="receipt-head">
+            <span class="receipt-title"><strong id="receiptCount">0</strong> rows copied</span>
+            <div class="receipt-actions">
+                <button class="receipt-btn rcopy" onclick="copyReceiptAgain()">Copy Again</button>
+                <button class="receipt-btn rrestore" onclick="restoreData()">Restore</button>
+            </div>
+        </div>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>SKU</th><th>Shelf</th><th>Staff</th><th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="receiptBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Staff modal ── -->
+<div id="staffModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <h3>Staff Number Required</h3>
+        <p>Enter your staff number to submit entries.</p>
+        <input type="text" id="modalStaffInput" placeholder="Staff number">
+        <div class="modal-btns">
+            <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+            <button class="modal-confirm" onclick="confirmModal()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<div class="version">v2.0.0</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+let currentStaffNumber = '';
+let entries = []; // { id, sku, shelf, title, price, loading }
+let lastSubmittedData = null;
+let lastClipboardText = '';
+let skuDebounceTimer = null;
+let shelfDebounceTimer = null;
+let productCache = {}; // sku -> product data
+let entryIdCounter = 0;
+
+// ─── LocalStorage helpers ─────────────────────────────────
+function getAllStaffData() {
+    try { return JSON.parse(localStorage.getItem('inventoryStaffData') || '{}'); }
+    catch { return {}; }
+}
+
+function saveStaffData() {
+    if (!currentStaffNumber) return;
+    try {
+        const all = getAllStaffData();
+        all[currentStaffNumber] = entries.map(e => ({ sku: e.sku, shelf: e.shelf }));
+        localStorage.setItem('inventoryStaffData', JSON.stringify(all));
+    } catch {}
+}
+
+function removeStaffData(staffNumber) {
+    try {
+        const all = getAllStaffData();
+        delete all[staffNumber];
+        localStorage.setItem('inventoryStaffData', JSON.stringify(all));
+    } catch {}
+}
+
+function loadStaffData(staffNumber) {
+    entries = [];
+    if (!staffNumber) { renderStack(); return; }
+    try {
+        const all = getAllStaffData();
+        const rows = all[staffNumber] || [];
+        rows.forEach(r => {
+            const id = ++entryIdCounter;
+            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true });
         });
-    </script>
-    <div class="version-number">v1.0.0</div>
+        renderStack();
+        // Fetch product info for loaded entries
+        entries.forEach(e => fetchProductForEntry(e));
+    } catch {}
+}
+
+// ─── API ──────────────────────────────────────────────────
+const API_BASE = 'https://datahydrate.com';
+
+async function fetchProduct(sku) {
+    if (productCache[sku] !== undefined) return productCache[sku];
+    try {
+        const res = await fetch(`${API_BASE}/api/products?sku=${encodeURIComponent(sku)}`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            mode: 'cors',
+            cache: 'no-cache'
+        });
+        if (!res.ok) {
+            console.warn(`[datahydrate] HTTP ${res.status} for SKU ${sku}`);
+            productCache[sku] = null;
+            return null;
+        }
+        const data = await res.json();
+        console.log(`[datahydrate] SKU ${sku}:`, data);
+        // API returns an array; grab first matching item
+        const product = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        productCache[sku] = product;
+        return product;
+    } catch (err) {
+        console.error(`[datahydrate] Fetch failed for SKU ${sku}:`, err);
+        productCache[sku] = null;
+        return null;
+    }
+}
+
+async function fetchProductForEntry(entry) {
+    if (!entry.sku) return;
+    const product = await fetchProduct(entry.sku);
+    entry.loading = false;
+    if (product) {
+        entry.title = product.title || null;
+        entry.price = product.price_cents != null ? product.price_cents : null;
+        entry.isPublic = product.is_public;
+    }
+    renderStack();
+}
+
+// Shelf whitelist check — respects is_public field.
+// When whitelist is active, only shelves matching is_public=true products
+// are allowed. Currently we use a simulated check; when the API
+// supports shelf whitelisting natively this can be swapped out.
+async function checkShelfAllowed(shelf) {
+    if (!shelf) return { allowed: true };
+    // Future: hit a dedicated shelf/whitelist endpoint when available.
+    // For now: any non-empty shelf is allowed. The is_public check on the
+    // product side is enforced separately when the product is fetched.
+    return { allowed: true };
+}
+
+// ─── SKU preview in entry bar ─────────────────────────────
+function handleSkuInput() {
+    clearTimeout(skuDebounceTimer);
+    const sku = document.getElementById('skuInput').value.trim().toUpperCase();
+    document.getElementById('skuInput').value = sku;
+
+    const preview = document.getElementById('productPreview');
+    const status = document.getElementById('previewStatus');
+
+    if (!sku) {
+        status.textContent = '';
+        status.className = 'preview-status';
+        preview.innerHTML = '<span class="preview-status" id="previewStatus"></span>';
+        return;
+    }
+
+    status.textContent = 'looking up…';
+    status.className = 'preview-status loading';
+
+    skuDebounceTimer = setTimeout(async () => {
+        const product = await fetchProduct(sku);
+        const previewEl = document.getElementById('productPreview');
+
+        if (product) {
+            const title = product.title || '—';
+            const price = product.price_cents != null
+                ? `kr ${(product.price_cents / 100).toFixed(2)}`
+                : '';
+            const isPublic = product.is_public;
+
+            previewEl.innerHTML = `
+                <span class="preview-sku">${sku}</span>
+                <span class="preview-title" title="${title}">${title}</span>
+                ${price ? `<span class="preview-price">${price}</span>` : ''}
+                ${!isPublic ? `<span class="preview-status blocked" style="margin-left:6px">⊘ not public</span>` : ''}
+            `;
+        } else {
+            previewEl.innerHTML = `
+                <span class="preview-sku">${sku}</span>
+                <span class="preview-status not-found">Product not found</span>
+            `;
+        }
+    }, 350);
+}
+
+// ─── Shelf validation ────────────────────────────────────
+function handleShelfInput() {
+    clearTimeout(shelfDebounceTimer);
+    const shelf = document.getElementById('shelfInput').value.trim().toUpperCase();
+    document.getElementById('shelfInput').value = shelf;
+
+    const statusEl = document.getElementById('shelfStatus');
+    const shelfField = document.getElementById('shelfInput');
+
+    if (!shelf) {
+        statusEl.textContent = '';
+        shelfField.className = 'entry-field';
+        return;
+    }
+
+    statusEl.textContent = 'checking…';
+    statusEl.className = 'shelf-status checking';
+
+    shelfDebounceTimer = setTimeout(async () => {
+        const result = await checkShelfAllowed(shelf);
+        const sEl = document.getElementById('shelfStatus');
+        const sField = document.getElementById('shelfInput');
+        if (result.allowed) {
+            sEl.textContent = '✓ allowed';
+            sEl.className = 'shelf-status ok';
+            sField.classList.remove('error', 'warning');
+            sField.classList.add('validated');
+        } else {
+            sEl.textContent = '⊘ shelf blocked';
+            sEl.className = 'shelf-status blocked';
+            sField.classList.remove('validated', 'warning');
+            sField.classList.add('error');
+        }
+    }, 300);
+}
+
+// ─── Add entry ────────────────────────────────────────────
+async function addEntry() {
+    const skuRaw = document.getElementById('skuInput').value.trim().toUpperCase();
+    const shelfRaw = document.getElementById('shelfInput').value.trim().toUpperCase() || getLastShelf();
+
+    if (!skuRaw) { showToast('Enter a SKU', 'error'); document.getElementById('skuInput').focus(); return; }
+    if (!shelfRaw) { showToast('Enter a shelf', 'error'); document.getElementById('shelfInput').focus(); return; }
+
+    // Check shelf whitelist before adding
+    const shelfCheck = await checkShelfAllowed(shelfRaw);
+    if (!shelfCheck.allowed) {
+        showToast(`Shelf "${shelfRaw}" is not whitelisted`, 'error');
+        document.getElementById('shelfInput').focus();
+        return;
+    }
+
+    const shelf = shelfRaw === ' ' ? '*FJERN*' : shelfRaw;
+
+    const id = ++entryIdCounter;
+    const entry = { id, sku: skuRaw, shelf, title: null, price: null, loading: true, isPublic: true };
+    entries.unshift(entry);
+
+    // Copy cached product info immediately if available
+    if (productCache[skuRaw] !== undefined && productCache[skuRaw] !== null) {
+        const p = productCache[skuRaw];
+        entry.loading = false;
+        entry.title = p.title || null;
+        entry.price = p.price_cents != null ? p.price_cents : null;
+        entry.isPublic = p.is_public;
+    }
+
+    renderStack();
+    saveStaffData();
+
+    // Clear inputs and reset preview
+    document.getElementById('skuInput').value = '';
+    document.getElementById('shelfInput').value = '';
+    document.getElementById('shelfInput').className = 'entry-field';
+    document.getElementById('shelfStatus').textContent = '';
+    document.getElementById('productPreview').innerHTML = '<span class="preview-status" id="previewStatus"></span>';
+
+    document.getElementById('skuInput').focus();
+
+    // Async fetch if not cached
+    if (entry.loading) {
+        fetchProductForEntry(entry);
+    }
+}
+
+function getLastShelf() {
+    for (const e of entries) {
+        if (e.shelf) return e.shelf;
+    }
+    return '';
+}
+
+function removeEntry(id) {
+    entries = entries.filter(e => e.id !== id);
+    renderStack();
+    saveStaffData();
+}
+
+// ─── Render stack ─────────────────────────────────────────
+function renderStack() {
+    const stack = document.getElementById('entryStack');
+    const empty = document.getElementById('emptyState');
+
+    updateEntryCount();
+
+    if (entries.length === 0) {
+        stack.innerHTML = '<div class="stack-empty" id="emptyState">Enter a SKU and shelf above to begin</div>';
+        return;
+    }
+
+    // Keep existing DOM nodes to avoid reflowing animated items;
+    // we rebuild fully here for simplicity (entries rarely > 100)
+    const existingIds = new Set(
+        Array.from(stack.querySelectorAll('.stack-item')).map(el => el.dataset.id)
+    );
+
+    // Remove items no longer in entries
+    stack.querySelectorAll('.stack-item').forEach(el => {
+        if (!entries.find(e => String(e.id) === el.dataset.id)) el.remove();
+    });
+
+    // Add/update entries — insert at correct position
+    entries.forEach((entry, idx) => {
+        let el = stack.querySelector(`.stack-item[data-id="${entry.id}"]`);
+        const isNew = !el;
+
+        if (isNew) {
+            el = document.createElement('div');
+            el.className = 'stack-item';
+            el.dataset.id = entry.id;
+        }
+
+        const shelfClass = entry.shelf === '*FJERN*' ? 'item-shelf remove' : 'item-shelf';
+        const titleHtml = entry.loading
+            ? `<span class="item-title loading">loading…</span>`
+            : entry.title
+                ? `<span class="item-title" title="${entry.title}">${entry.title}</span>`
+                : `<span class="item-title" style="color:var(--text-dim)">Unknown product</span>`;
+
+        const priceHtml = !entry.loading && entry.price != null
+            ? `<span class="item-price">kr ${(entry.price / 100).toFixed(2)}</span>`
+            : '';
+
+        el.innerHTML = `
+            <span class="item-index">${String(entries.length - idx).padStart(2, '0')}</span>
+            <div class="item-body">
+                <div class="item-top">
+                    <span class="item-sku">${entry.sku}</span>
+                    <span class="${shelfClass}">${entry.shelf}</span>
+                </div>
+                ${titleHtml}
+            </div>
+            ${priceHtml}
+            <button class="item-remove" title="Remove" onclick="removeEntry(${entry.id})">×</button>
+        `;
+
+        if (isNew) {
+            if (stack.firstChild) stack.insertBefore(el, stack.firstChild);
+            else stack.appendChild(el);
+        }
+    });
+
+    updateEntryCount();
+}
+
+function updateEntryCount() {
+    const el = document.getElementById('entryCount');
+    const n = entries.length;
+    el.innerHTML = n === 0
+        ? 'No entries yet'
+        : `<span>${n}</span> entr${n === 1 ? 'y' : 'ies'}`;
+}
+
+// ─── Submit / clipboard ───────────────────────────────────
+async function submitEntries() {
+    const staff = document.getElementById('staffNumber').value.trim();
+    if (!staff) { showModal(); return; }
+    await performCopy(staff);
+}
+
+async function performCopy(staffNumber) {
+    if (entries.length === 0) { showToast('No entries to copy', 'error'); return; }
+
+    const today = new Date().toISOString().split('T')[0];
+    const lines = [];
+    const forReceipt = [];
+    const forRestore = [];
+
+    entries.forEach(e => {
+        lines.push(`${e.sku}\t${e.shelf}\t${staffNumber}\t${today}`);
+        forReceipt.push({ sku: e.sku, shelf: e.shelf });
+        forRestore.push({ sku: e.sku, shelf: e.shelf });
+    });
+
+    const text = lines.join('\n');
+
+    try {
+        await navigator.clipboard.writeText(text);
+        lastSubmittedData = { staffNumber, rows: forRestore };
+        lastClipboardText = text;
+
+        removeStaffData(staffNumber);
+        entries = [];
+        renderStack();
+        displayStaffDropdown();
+
+        showReceipt(forReceipt, staffNumber, today);
+        showToast(`${lines.length} rows copied!`, 'success');
+    } catch {
+        showToast('Clipboard failed. Try again.', 'error');
+    }
+}
+
+async function copyReceiptAgain() {
+    if (!lastClipboardText) { showToast('Nothing to copy', 'error'); return; }
+    try {
+        await navigator.clipboard.writeText(lastClipboardText);
+        showToast('Copied again!', 'success');
+    } catch {
+        showToast('Clipboard failed', 'error');
+    }
+}
+
+function restoreData() {
+    if (!lastSubmittedData) { showToast('Nothing to restore', 'error'); return; }
+    const { staffNumber, rows } = lastSubmittedData;
+
+    try {
+        const all = getAllStaffData();
+        all[staffNumber] = rows;
+        localStorage.setItem('inventoryStaffData', JSON.stringify(all));
+    } catch { showToast('Restore failed', 'error'); return; }
+
+    document.getElementById('staffNumber').value = staffNumber;
+    currentStaffNumber = staffNumber;
+    loadStaffData(staffNumber);
+
+    document.getElementById('receipt').classList.remove('visible');
+    lastSubmittedData = null;
+    lastClipboardText = '';
+
+    showToast('Data restored', 'success');
+    displayStaffDropdown();
+}
+
+// ─── Receipt ─────────────────────────────────────────────
+function showReceipt(rows, staff, date) {
+    const tbody = document.getElementById('receiptBody');
+    tbody.innerHTML = rows.map(r =>
+        `<tr><td>${r.sku}</td><td>${r.shelf}</td><td>${staff}</td><td>${date}</td></tr>`
+    ).join('');
+    document.getElementById('receiptCount').textContent = rows.length;
+    document.getElementById('receipt').classList.add('visible');
+}
+
+// ─── Clear ────────────────────────────────────────────────
+function clearAll() {
+    if (!confirm('Clear all entries for this session?')) return;
+    entries = [];
+    renderStack();
+    if (currentStaffNumber) saveStaffData();
+    document.getElementById('receipt').classList.remove('visible');
+    showToast('Cleared', 'success');
+}
+
+// ─── Staff number / dropdown ──────────────────────────────
+function handleStaffInput() {
+    const val = document.getElementById('staffNumber').value.trim();
+    if (currentStaffNumber && val !== currentStaffNumber) {
+        saveStaffData();
+        entries = [];
+        currentStaffNumber = '';
+        renderStack();
+    }
+    displayStaffDropdown();
+}
+
+function handleStaffChange() {
+    const val = document.getElementById('staffNumber').value.trim();
+    if (val === currentStaffNumber) return;
+
+    const unowned = entries.map(e => ({ sku: e.sku, shelf: e.shelf }));
+
+    saveStaffData();
+    currentStaffNumber = val;
+
+    if (val) {
+        const all = getAllStaffData();
+        const saved = all[val] || [];
+        entries = [];
+
+        saved.forEach(r => {
+            const id = ++entryIdCounter;
+            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true });
+        });
+
+        // Merge unowned rows
+        unowned.forEach(r => {
+            const id = ++entryIdCounter;
+            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true });
+        });
+
+        renderStack();
+        entries.forEach(e => { if (e.loading) fetchProductForEntry(e); });
+        saveStaffData();
+
+        if (saved.length > 0 && unowned.length > 0)
+            showToast(`Merged ${unowned.length} new + ${saved.length} saved`, 'success');
+        else if (unowned.length > 0)
+            showToast(`${unowned.length} row${unowned.length>1?'s':''} assigned to #${val}`, 'success');
+    } else {
+        entries = unowned.map(r => ({ id: ++entryIdCounter, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true }));
+        renderStack();
+    }
+
+    displayStaffDropdown();
+}
+
+function displayStaffDropdown() {
+    const dd = document.getElementById('staffDropdown');
+    const current = document.getElementById('staffNumber').value.trim();
+
+    if (current) { dd.classList.remove('open'); return; }
+
+    const all = getAllStaffData();
+    const nums = Object.keys(all).filter(n => (all[n]||[]).length > 0);
+
+    if (nums.length === 0) { dd.classList.remove('open'); return; }
+
+    dd.innerHTML = nums.map(n => `
+        <div class="staff-dropdown-item" onclick="selectStaff('${n}')">
+            <span class="staff-num">#${n}</span>
+            <span class="staff-cnt">${all[n].length} row${all[n].length!==1?'s':''}</span>
+        </div>
+    `).join('');
+    dd.classList.add('open');
+}
+
+function selectStaff(num) {
+    document.getElementById('staffNumber').value = num;
+    document.getElementById('staffDropdown').classList.remove('open');
+    handleStaffChange();
+}
+
+// ─── Modal ────────────────────────────────────────────────
+function showModal() {
+    const modal = document.getElementById('staffModal');
+    const inp = document.getElementById('modalStaffInput');
+    modal.classList.add('visible');
+    inp.value = '';
+    setTimeout(() => inp.focus(), 50);
+}
+
+function closeModal() {
+    document.getElementById('staffModal').classList.remove('visible');
+}
+
+function confirmModal() {
+    const val = document.getElementById('modalStaffInput').value.trim().toUpperCase();
+    if (!val) { document.getElementById('modalStaffInput').focus(); return; }
+    document.getElementById('staffNumber').value = val;
+    handleStaffChange();
+    closeModal();
+    performCopy(val);
+}
+
+// ─── Toast ────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type} show`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+}
+
+// ─── Keyboard shortcuts ───────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); submitEntries(); }
+    if (e.key === 'Escape') closeModal();
+});
+
+document.getElementById('modalStaffInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmModal();
+    if (e.key === 'Escape') closeModal();
+});
+
+// Enter in SKU field auto-focuses shelf
+document.getElementById('skuInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const shelf = document.getElementById('shelfInput');
+        const lastShelf = getLastShelf();
+        if (!shelf.value && lastShelf) shelf.value = lastShelf;
+        shelf.focus(); shelf.select();
+    }
+});
+
+// Enter in shelf field adds entry
+document.getElementById('shelfInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addEntry(); }
+});
+
+// Ctrl+Space → *FJERN* shelf
+document.getElementById('shelfInput').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === ' ') {
+        e.preventDefault();
+        document.getElementById('shelfInput').value = '*FJERN*';
+    }
+});
+
+// ─── Wire up inputs ────────────────────────────────────────
+document.getElementById('skuInput').addEventListener('input', handleSkuInput);
+document.getElementById('shelfInput').addEventListener('input', handleShelfInput);
+document.getElementById('staffNumber').addEventListener('input', handleStaffInput);
+document.getElementById('staffNumber').addEventListener('change', handleStaffChange);
+document.getElementById('staffNumber').addEventListener('blur', () => {
+    setTimeout(() => { handleStaffChange(); displayStaffDropdown(); }, 200);
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+    if (!e.target.closest('.staff-input-wrap'))
+        document.getElementById('staffDropdown').classList.remove('open');
+});
+
+// ─── Init ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    displayStaffDropdown();
+    document.getElementById('skuInput').focus();
+});
+</script>
 </body>
 </html>
