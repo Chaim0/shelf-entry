@@ -765,7 +765,7 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<div class="version">v2.0.0</div>
+<div class="version">v2.0.1</div>
 
 <script>
 // ─── State ───────────────────────────────────────────────
@@ -820,8 +820,8 @@ function loadStaffData(staffNumber) {
 // ─── API ──────────────────────────────────────────────────
 const API_BASE = 'https://datahydrate.com';
 
-async function fetchProduct(sku) {
-    if (productCache[sku] !== undefined) return productCache[sku];
+async function fetchProduct(sku, bypassCache = false) {
+    if (!bypassCache && productCache[sku] !== undefined) return productCache[sku];
     try {
         const res = await fetch(`${API_BASE}/api/products?sku=${encodeURIComponent(sku)}`, {
             method: 'GET',
@@ -872,27 +872,34 @@ async function checkShelfAllowed(shelf) {
 }
 
 // ─── SKU preview in entry bar ─────────────────────────────
+function setPreview(html) {
+    const el = document.getElementById('productPreview');
+    if (el) el.innerHTML = html;
+}
+
 function handleSkuInput() {
     clearTimeout(skuDebounceTimer);
     const sku = document.getElementById('skuInput').value.trim().toUpperCase();
     document.getElementById('skuInput').value = sku;
 
-    const preview = document.getElementById('productPreview');
-    const status = document.getElementById('previewStatus');
-
     if (!sku) {
-        status.textContent = '';
-        status.className = 'preview-status';
-        preview.innerHTML = '<span class="preview-status" id="previewStatus"></span>';
+        setPreview('<span class="preview-status" id="previewStatus"></span>');
         return;
     }
 
-    status.textContent = 'looking up…';
-    status.className = 'preview-status loading';
+    setPreview('<span class="preview-status loading" id="previewStatus">looking up…</span>');
 
     skuDebounceTimer = setTimeout(async () => {
-        const product = await fetchProduct(sku);
-        const previewEl = document.getElementById('productPreview');
+        const currentSku = document.getElementById('skuInput')?.value.trim().toUpperCase();
+        if (currentSku !== sku) return;
+
+        let product = null;
+        try {
+            product = await fetchProduct(sku, true);
+        } catch {}
+
+        const skuAfter = document.getElementById('skuInput')?.value.trim().toUpperCase();
+        if (skuAfter !== sku) return;
 
         if (product) {
             const title = product.title || '—';
@@ -900,18 +907,17 @@ function handleSkuInput() {
                 ? `kr ${(product.price_cents / 100).toFixed(2)}`
                 : '';
             const isPublic = product.is_public;
-
-            previewEl.innerHTML = `
+            setPreview(`
                 <span class="preview-sku">${sku}</span>
                 <span class="preview-title" title="${title}">${title}</span>
                 ${price ? `<span class="preview-price">${price}</span>` : ''}
                 ${!isPublic ? `<span class="preview-status blocked" style="margin-left:6px">⊘ not public</span>` : ''}
-            `;
+            `);
         } else {
-            previewEl.innerHTML = `
+            setPreview(`
                 <span class="preview-sku">${sku}</span>
                 <span class="preview-status not-found">Product not found</span>
-            `;
+            `);
         }
     }, 350);
 }
@@ -935,9 +941,17 @@ function handleShelfInput() {
     statusEl.className = 'shelf-status checking';
 
     shelfDebounceTimer = setTimeout(async () => {
-        const result = await checkShelfAllowed(shelf);
+        let result = { allowed: true };
+        try { result = await checkShelfAllowed(shelf); } catch {}
+
+        // Bail if field changed since debounce fired
+        const currentShelf = document.getElementById('shelfInput')?.value.trim().toUpperCase();
+        if (currentShelf !== shelf) return;
+
         const sEl = document.getElementById('shelfStatus');
         const sField = document.getElementById('shelfInput');
+        if (!sEl || !sField) return;
+
         if (result.allowed) {
             sEl.textContent = '✓ allowed';
             sEl.className = 'shelf-status ok';
