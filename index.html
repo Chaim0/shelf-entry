@@ -925,9 +925,11 @@ function handleSkuInput() {
 // ─── Shelf validation ────────────────────────────────────
 function handleShelfInput() {
     clearTimeout(shelfDebounceTimer);
-    const shelf = document.getElementById('shelfInput').value.trim().toUpperCase();
-    document.getElementById('shelfInput').value = shelf;
 
+    const shelfUppercase = document.getElementById('shelfInput').value.toUpperCase();
+    document.getElementById('shelfInput').value = shelfUppercase;
+
+    const shelf = document.getElementById('shelfInput').value.trim().toUpperCase();
     const statusEl = document.getElementById('shelfStatus');
     const shelfField = document.getElementById('shelfInput');
 
