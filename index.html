@@ -203,6 +203,12 @@
         input.entry-field.validated { border-color: var(--accent); }
         input.entry-field.error { border-color: var(--danger); }
         input.entry-field.warning { border-color: var(--warn); }
+        input.entry-field.fjern {
+            border-color: var(--danger);
+            background: var(--danger-dim);
+            color: var(--danger);
+            font-weight: 700;
+        }
 
         /* Product preview strip */
         .product-preview {
@@ -765,7 +771,7 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<div class="version">v2.0.1</div>
+<div class="version">v2.1.0</div>
 
 <script>
 // ─── State ───────────────────────────────────────────────
@@ -937,6 +943,13 @@ function handleShelfInput() {
         statusEl.textContent = '';
         shelfField.className = 'entry-field';
         return;
+    }
+
+    // Sync fjern styling
+    if (shelf === '*FJERN*') {
+        shelfField.classList.add('fjern');
+    } else {
+        shelfField.classList.remove('fjern');
     }
 
     statusEl.textContent = 'checking…';
@@ -1358,27 +1371,113 @@ document.getElementById('skuInput').addEventListener('blur', () => {
     }
 });
 
+// ─── Numpad shelf interceptor ─────────────────────────────
+// Maps numpad digit 1-9 to shelf row letters (no I)
+const NUMPAD_ROW_LETTER = { '1':'A','2':'B','3':'C','4':'D','5':'E','6':'F','7':'G','8':'H','9':'J' };
+// Maps numpad digit 1-6 to T-shelf sub-letters
+const NUMPAD_T_LETTER   = { '1':'A','2':'B','3':'C','4':'D','5':'E','6':'F' };
+
+// Returns true if val is a completed shelf pattern (further input blocked)
+function isShelfComplete(val) {
+    if (val === '*FJERN*') return true;
+    if (/^[A-HJ]\d{4}$/.test(val)) return true;   // standard: [A-HJ][0-9]{4}
+    if (/^T\d{4}[A-F]$/.test(val)) return true;    // T-shelf:  T[0-9]{4}[A-F]
+    return false;
+}
+
+// Returns true if val is T + exactly 4 digits — awaiting final letter
+function isTShelfAwaitingLetter(val) {
+    return /^T\d{4}$/.test(val);
+}
+
 // Enter/Tab in shelf field → submit if both fields have values, else move to SKU
 document.getElementById('shelfInput').addEventListener('keydown', e => {
+    const field = e.currentTarget;
+
+    // ── Standard shortcuts ────────────────────────────────
     if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
         e.preventDefault();
         const sku = document.getElementById('skuInput').value.trim();
-        const shelf = document.getElementById('shelfInput').value.trim();
+        const shelf = field.value.trim();
         if (sku && shelf) {
             addEntry();
         } else {
             document.getElementById('skuInput').focus();
         }
+        return;
     }
-});
 
-// Ctrl+Space in shelf field → *FJERN*
-document.getElementById('shelfInput').addEventListener('keydown', e => {
+    // Ctrl+Space in shelf field → *FJERN*
     if (e.ctrlKey && e.key === ' ') {
         e.preventDefault();
-        document.getElementById('shelfInput').value = '*FJERN*';
+        field.value = '*FJERN*';
+        field.className = 'entry-field fjern';
+        field.select();
+        handleShelfInput();
+        return;
+    }
+
+    // ── Numpad handling ───────────────────────────────────
+    const NUMPAD_DIGIT_MAP = {
+        'Numpad0':'0','Numpad1':'1','Numpad2':'2','Numpad3':'3','Numpad4':'4',
+        'Numpad5':'5','Numpad6':'6','Numpad7':'7','Numpad8':'8','Numpad9':'9'
+    };
+    const isNumpadDigit = NUMPAD_DIGIT_MAP.hasOwnProperty(e.code);
+    const isNumpadAdd   = e.code === 'NumpadAdd';
+    const isNumpadEnter = e.code === 'NumpadEnter';
+
+    if (isNumpadEnter) {
+        e.preventDefault();
+        const sku = document.getElementById('skuInput').value.trim();
+        const shelf = field.value.trim();
+        if (sku && shelf) addEntry(); else document.getElementById('skuInput').focus();
+        return;
+    }
+
+    if (!isNumpadDigit && !isNumpadAdd) return; // not our concern
+
+    e.preventDefault(); // take full control of numpad input in this field
+
+    const digit = isNumpadAdd ? null : NUMPAD_DIGIT_MAP[e.code];
+    const currentVal = field.value;
+
+    // Block if pattern already complete
+    if (isShelfComplete(currentVal)) return;
+
+    // ── Empty field ───────────────────────────────────────
+    if (currentVal === '') {
+        if (isNumpadAdd) {
+            field.value = 'T';
+        } else if (digit === '0') {
+            field.value = '*FJERN*';
+            field.className = 'entry-field fjern';
+            field.select();
+        } else {
+            field.value = NUMPAD_ROW_LETTER[digit];
+        }
+        handleShelfInput();
+        return;
+    }
+
+    // ── T-shelf awaiting final letter ─────────────────────
+    if (isTShelfAwaitingLetter(currentVal)) {
+        if (!isNumpadAdd && NUMPAD_T_LETTER[digit]) {
+            field.value = currentVal + NUMPAD_T_LETTER[digit];
+            field.className = 'entry-field validated';
+        }
+        // 7-9, +, 0 silently blocked in this state
+        handleShelfInput();
+        return;
+    }
+
+    // ── In-progress numeric portion ───────────────────────
+    if (isNumpadAdd) return; // + not valid mid-pattern
+    const digitCount = (currentVal.match(/\d/g) || []).length;
+    if (digitCount < 4) {
+        field.value = currentVal + digit;
         handleShelfInput();
     }
+    // digitCount === 4 on standard pattern means complete — isShelfComplete blocks further input
 });
 
 // ─── Wire up inputs ────────────────────────────────────────
