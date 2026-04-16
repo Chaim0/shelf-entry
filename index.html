@@ -1439,6 +1439,13 @@ document.getElementById('shelfInput').addEventListener('keydown', e => {
     e.preventDefault(); // take full control of numpad input in this field
 
     const digit = isNumpadAdd ? null : NUMPAD_DIGIT_MAP[e.code];
+
+    // If the entire field is selected (e.g. inherited shelf), treat as empty
+    if (field.selectionStart === 0 && field.selectionEnd === field.value.length && field.value.length > 0) {
+        field.value = '';
+        field.className = 'entry-field';
+    }
+
     const currentVal = field.value;
 
     // Block if pattern already complete
