@@ -704,7 +704,7 @@
                 </div>
                 <div class="field-group">
                     <span class="field-label">Shelf</span>
-                    <input type="text" id="shelfInput" class="entry-field" placeholder="e.g. A1-01" autocomplete="off">
+                    <input type="text" id="shelfInput" class="entry-field" placeholder="e.g. A0101" autocomplete="off">
                 </div>
                 <button id="addBtn" class="add-btn" onclick="addEntry()">Add ↵</button>
             </div>
@@ -1005,6 +1005,7 @@ async function addEntry() {
     // Clear inputs and reset preview
     document.getElementById('skuInput').value = '';
     document.getElementById('shelfInput').value = '';
+    document.getElementById('shelfInput').placeholder = 'e.g. A0101';
     document.getElementById('shelfInput').className = 'entry-field';
     document.getElementById('shelfStatus').textContent = '';
     document.getElementById('productPreview').innerHTML = '<span class="preview-status" id="previewStatus"></span>';
@@ -1319,27 +1320,64 @@ document.getElementById('modalStaffInput').addEventListener('keydown', e => {
     if (e.key === 'Escape') closeModal();
 });
 
-// Enter in SKU field auto-focuses shelf
+// Enter/Tab in SKU field → move to shelf
 document.getElementById('skuInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
+    if (e.ctrlKey && e.key === ' ') {
+        e.preventDefault();
+        document.getElementById('shelfInput').value = '*FJERN*';
+        handleShelfInput();
+        addEntry();
+        return;
+    }
+    if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
         e.preventDefault();
         const shelf = document.getElementById('shelfInput');
         const lastShelf = getLastShelf();
-        if (!shelf.value && lastShelf) shelf.value = lastShelf;
+        if (e.key === 'Enter' && !shelf.value.trim() && lastShelf) {
+            // Accept inherited shelf
+            shelf.value = lastShelf;
+            handleShelfInput();
+        }
+        // Tab: leave shelf empty (discard inherited), just move focus
         shelf.focus(); shelf.select();
     }
 });
 
-// Enter in shelf field adds entry
-document.getElementById('shelfInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); addEntry(); }
+document.getElementById('skuInput').addEventListener('focus', () => {
+    const shelf = document.getElementById('shelfInput');
+    const lastShelf = getLastShelf();
+    if (!shelf.value.trim() && lastShelf) {
+        shelf.placeholder = lastShelf;
+    }
 });
 
-// Ctrl+Space → *FJERN* shelf
+document.getElementById('skuInput').addEventListener('blur', () => {
+    const shelf = document.getElementById('shelfInput');
+    if (!shelf.value.trim()) {
+        shelf.placeholder = 'e.g. A0101';
+    }
+});
+
+// Enter/Tab in shelf field → submit if both fields have values, else move to SKU
+document.getElementById('shelfInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
+        e.preventDefault();
+        const sku = document.getElementById('skuInput').value.trim();
+        const shelf = document.getElementById('shelfInput').value.trim();
+        if (sku && shelf) {
+            addEntry();
+        } else {
+            document.getElementById('skuInput').focus();
+        }
+    }
+});
+
+// Ctrl+Space in shelf field → *FJERN*
 document.getElementById('shelfInput').addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === ' ') {
         e.preventDefault();
         document.getElementById('shelfInput').value = '*FJERN*';
+        handleShelfInput();
     }
 });
 
