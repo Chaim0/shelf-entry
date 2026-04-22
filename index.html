@@ -771,18 +771,19 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<div class="version">v2.1.0</div>
+<div class="version">v2.2.0</div>
 
 <script>
 // ─── State ───────────────────────────────────────────────
 let currentStaffNumber = '';
-let entries = []; // { id, sku, shelf, title, price, loading }
+let entries = []; // { id, sku, shelf, title, price, loading, crawledAt, queueStatus }
 let lastSubmittedData = null;
 let lastClipboardText = '';
 let skuDebounceTimer = null;
 let shelfDebounceTimer = null;
-let productCache = {}; // sku -> product data
+let productCache = {}; // sku -> product data with crawled_at timestamp
 let entryIdCounter = 0;
+const CRAWL_AGE_THRESHOLD_MS = 3600000; // 1 hour in milliseconds
 
 // ─── LocalStorage helpers ─────────────────────────────────
 function getAllStaffData() {
@@ -815,7 +816,7 @@ function loadStaffData(staffNumber) {
         const rows = all[staffNumber] || [];
         rows.forEach(r => {
             const id = ++entryIdCounter;
-            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true });
+            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true, crawledAt: null, queueStatus: null });
         });
         renderStack();
         // Fetch product info for loaded entries
@@ -825,9 +826,30 @@ function loadStaffData(staffNumber) {
 
 // ─── API ──────────────────────────────────────────────────
 const API_BASE = 'https://datahydrate.com';
+const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+
+function isProductStale(product) {
+    if (!product || !product.updated_at) return false;
+    try {
+        const updatedTime = new Date(product.updated_at).getTime();
+        const age = Date.now() - updatedTime;
+        return age > STALE_THRESHOLD_MS;
+    } catch {
+        return false;
+    }
+}
 
 async function fetchProduct(sku, bypassCache = false) {
-    if (!bypassCache && productCache[sku] !== undefined) return productCache[sku];
+    if (!bypassCache && productCache[sku] !== undefined) {
+        const cached = productCache[sku];
+        // Check if cached data is stale based on updated_at from API
+        if (cached && isProductStale(cached)) {
+            // Data is stale; queue it for crawling in background
+            queueStaleProduct(sku);
+        }
+        // Return cached data anyway (don't block UI)
+        return cached;
+    }
     try {
         const res = await fetch(`${API_BASE}/api/products?sku=${encodeURIComponent(sku)}`, {
             method: 'GET',
@@ -844,12 +866,134 @@ async function fetchProduct(sku, bypassCache = false) {
         console.log(`[datahydrate] SKU ${sku}:`, data);
         // API returns an array; grab first matching item
         const product = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        if (product && isProductStale(product)) {
+            // Freshly fetched data is already stale; queue it
+            queueStaleProduct(sku);
+        }
         productCache[sku] = product;
         return product;
     } catch (err) {
         console.error(`[datahydrate] Fetch failed for SKU ${sku}:`, err);
         productCache[sku] = null;
         return null;
+    }
+}
+
+let stalePollTimers = {}; // Track polling timers by SKU
+
+async function queueStaleProduct(sku) {
+    try {
+        const res = await fetch(`${API_BASE}/api/queue?sku=${encodeURIComponent(sku)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            mode: 'cors'
+        });
+        if (res.ok) {
+            const data = await res.json();
+            console.log(`[datahydrate] SKU ${sku} queued for crawling:`, data);
+            const estimatedMs = data.estimatedTimeMs;
+            // Start polling for fresh data after estimated time + buffer
+            if (estimatedMs !== null && estimatedMs !== undefined) {
+                pollForFreshProduct(sku, estimatedMs);
+            }
+        } else {
+            console.warn(`[datahydrate] Failed to queue SKU ${sku}: HTTP ${res.status}`);
+        }
+    } catch (err) {
+        console.error(`[datahydrate] Queue request failed for SKU ${sku}:`, err);
+    }
+}
+
+function pollForFreshProduct(sku, estimatedMs) {
+    // Clear any existing timer for this SKU
+    if (stalePollTimers[sku]) {
+        clearTimeout(stalePollTimers[sku]);
+    }
+
+    // Wait for estimated time + 2 second buffer, then start polling
+    const initialDelay = (estimatedMs || 5000) + 2000;
+    const pollInterval = 3000; // Poll every 3 seconds
+    const maxPollAttempts = 10; // Try for ~30 seconds total
+
+    let pollAttempts = 0;
+
+    const poll = async () => {
+        pollAttempts++;
+        console.log(`[datahydrate] Polling for fresh data: SKU ${sku} (attempt ${pollAttempts}/${maxPollAttempts})`);
+
+        try {
+            // Fetch with cache bypass to get latest data
+            const freshProduct = await fetchProduct(sku, true);
+
+            if (freshProduct && !isProductStale(freshProduct)) {
+                // Data is now fresh! Update any visible entries
+                console.log(`[datahydrate] SKU ${sku} is now fresh. Updating entries.`);
+                updateEntriesWithFreshProduct(sku, freshProduct);
+                delete stalePollTimers[sku];
+                return;
+            }
+
+            // Still stale or not found, keep polling
+            if (pollAttempts < maxPollAttempts) {
+                stalePollTimers[sku] = setTimeout(poll, pollInterval);
+            } else {
+                console.log(`[datahydrate] Gave up polling SKU ${sku} after ${maxPollAttempts} attempts`);
+                delete stalePollTimers[sku];
+            }
+        } catch (err) {
+            console.error(`[datahydrate] Poll fetch failed for SKU ${sku}:`, err);
+            if (pollAttempts < maxPollAttempts) {
+                stalePollTimers[sku] = setTimeout(poll, pollInterval);
+            } else {
+                delete stalePollTimers[sku];
+            }
+        }
+    };
+
+    // Schedule first poll after initial delay
+    stalePollTimers[sku] = setTimeout(poll, initialDelay);
+}
+
+function updateEntriesWithFreshProduct(sku, freshProduct) {
+    // Update all entries with this SKU
+    entries.forEach(entry => {
+        if (entry.sku === sku) {
+            entry.title = freshProduct.title || null;
+            entry.price = freshProduct.price_cents != null ? freshProduct.price_cents : null;
+            entry.isPublic = freshProduct.is_public;
+            // Mark as no longer loading to trigger re-render
+            entry.loading = false;
+        }
+    });
+    renderStack();
+}
+
+// Check if product data is stale and queue for crawling if needed
+async function queueIfStale(product, sku) {
+    if (!product || !product.crawled_at) return;
+    
+    const crawledTime = new Date(product.crawled_at).getTime();
+    const now = Date.now();
+    const ageMs = now - crawledTime;
+    
+    if (ageMs > CRAWL_AGE_THRESHOLD_MS) {
+        console.log(`[datahydrate] SKU ${sku} is ${Math.round(ageMs / 1000 / 60)} minutes old, queuing for crawl`);
+        try {
+            const res = await fetch(`${API_BASE}/api/queue?sku=${encodeURIComponent(sku)}`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                mode: 'cors'
+            });
+            if (res.ok) {
+                const queueData = await res.json();
+                console.log(`[datahydrate] SKU ${sku} queued. Position: ${queueData.queuePosition}, ETA: ${queueData.estimatedTimeMs}ms`);
+                return queueData;
+            } else {
+                console.warn(`[datahydrate] Queue failed for SKU ${sku}: HTTP ${res.status}`);
+            }
+        } catch (err) {
+            console.error(`[datahydrate] Queue request failed for SKU ${sku}:`, err);
+        }
     }
 }
 
@@ -861,6 +1005,10 @@ async function fetchProductForEntry(entry) {
         entry.title = product.title || null;
         entry.price = product.price_cents != null ? product.price_cents : null;
         entry.isPublic = product.is_public;
+        entry.crawledAt = product.crawled_at || null;
+        
+        // Queue for crawling if stale
+        queueIfStale(product, entry.sku);
     }
     renderStack();
 }
@@ -1000,7 +1148,7 @@ async function addEntry() {
     const shelf = shelfRaw === ' ' ? '*FJERN*' : shelfRaw;
 
     const id = ++entryIdCounter;
-    const entry = { id, sku: skuRaw, shelf, title: null, price: null, loading: true, isPublic: true };
+    const entry = { id, sku: skuRaw, shelf, title: null, price: null, loading: true, isPublic: true, crawledAt: null, queueStatus: null };
     entries.unshift(entry);
 
     // Copy cached product info immediately if available
@@ -1010,6 +1158,10 @@ async function addEntry() {
         entry.title = p.title || null;
         entry.price = p.price_cents != null ? p.price_cents : null;
         entry.isPublic = p.is_public;
+        entry.crawledAt = p.crawled_at || null;
+        
+        // Queue for crawling if stale
+        queueIfStale(p, skuRaw);
     }
 
     renderStack();
@@ -1239,13 +1391,13 @@ function handleStaffChange() {
 
         saved.forEach(r => {
             const id = ++entryIdCounter;
-            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true });
+            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true, crawledAt: null, queueStatus: null });
         });
 
         // Merge unowned rows
         unowned.forEach(r => {
             const id = ++entryIdCounter;
-            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true });
+            entries.unshift({ id, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true, crawledAt: null, queueStatus: null });
         });
 
         renderStack();
@@ -1257,7 +1409,7 @@ function handleStaffChange() {
         else if (unowned.length > 0)
             showToast(`${unowned.length} row${unowned.length>1?'s':''} assigned to #${val}`, 'success');
     } else {
-        entries = unowned.map(r => ({ id: ++entryIdCounter, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true }));
+        entries = unowned.map(r => ({ id: ++entryIdCounter, sku: r.sku, shelf: r.shelf, title: null, price: null, loading: true, crawledAt: null, queueStatus: null }));
         renderStack();
     }
 
@@ -1439,13 +1591,6 @@ document.getElementById('shelfInput').addEventListener('keydown', e => {
     e.preventDefault(); // take full control of numpad input in this field
 
     const digit = isNumpadAdd ? null : NUMPAD_DIGIT_MAP[e.code];
-
-    // If the entire field is selected (e.g. inherited shelf), treat as empty
-    if (field.selectionStart === 0 && field.selectionEnd === field.value.length && field.value.length > 0) {
-        field.value = '';
-        field.className = 'entry-field';
-    }
-
     const currentVal = field.value;
 
     // Block if pattern already complete
