@@ -1094,7 +1094,7 @@ function handleShelfInput() {
     }
 
     // Sync fjern styling
-    if (shelf === '*FJERN*') {
+    if (shelf === '!FJERN!') {
         shelfField.classList.add('fjern');
     } else {
         shelfField.classList.remove('fjern');
@@ -1145,7 +1145,7 @@ async function addEntry() {
         return;
     }
 
-    const shelf = shelfRaw === ' ' ? '*FJERN*' : shelfRaw;
+    const shelf = shelfRaw === ' ' ? '!FJERN!' : shelfRaw;
 
     const id = ++entryIdCounter;
     const entry = { id, sku: skuRaw, shelf, title: null, price: null, loading: true, isPublic: true, crawledAt: null, queueStatus: null };
@@ -1230,7 +1230,7 @@ function renderStack() {
             el.dataset.id = entry.id;
         }
 
-        const shelfClass = entry.shelf === '*FJERN*' ? 'item-shelf remove' : 'item-shelf';
+        const shelfClass = entry.shelf === '!FJERN!' ? 'item-shelf remove' : 'item-shelf';
         const titleHtml = entry.loading
             ? `<span class="item-title loading">loading…</span>`
             : entry.title
@@ -1489,7 +1489,7 @@ document.getElementById('modalStaffInput').addEventListener('keydown', e => {
 document.getElementById('skuInput').addEventListener('keydown', e => {
     if (e.ctrlKey && e.key === ' ') {
         e.preventDefault();
-        document.getElementById('shelfInput').value = '*FJERN*';
+        document.getElementById('shelfInput').value = '!FJERN!';
         handleShelfInput();
         addEntry();
         return;
@@ -1531,7 +1531,7 @@ const NUMPAD_T_LETTER   = { '1':'A','2':'B','3':'C','4':'D','5':'E','6':'F' };
 
 // Returns true if val is a completed shelf pattern (further input blocked)
 function isShelfComplete(val) {
-    if (val === '*FJERN*') return true;
+    if (val === '!FJERN!') return true;
     if (/^[A-HJ]\d{4}$/.test(val)) return true;   // standard: [A-HJ][0-9]{4}
     if (/^T\d{4}[A-F]$/.test(val)) return true;    // T-shelf:  T[0-9]{4}[A-F]
     return false;
@@ -1559,10 +1559,10 @@ document.getElementById('shelfInput').addEventListener('keydown', e => {
         return;
     }
 
-    // Ctrl+Space in shelf field → *FJERN*
+    // Ctrl+Space in shelf field → !FJERN!
     if (e.ctrlKey && e.key === ' ') {
         e.preventDefault();
-        field.value = '*FJERN*';
+        field.value = '!FJERN!';
         field.className = 'entry-field fjern';
         field.select();
         handleShelfInput();
@@ -1609,7 +1609,7 @@ document.getElementById('shelfInput').addEventListener('keydown', e => {
         if (isNumpadAdd) {
             field.value = 'T';
         } else if (digit === '0') {
-            field.value = '*FJERN*';
+            field.value = '!FJERN!';
             field.className = 'entry-field fjern';
             field.select();
         } else {
